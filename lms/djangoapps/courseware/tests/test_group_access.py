@@ -15,6 +15,8 @@ from xmodule.modulestore.django import modulestore
 import courseware.access as access
 from courseware.tests.factories import StaffFactory, UserFactory
 
+from milestones.tests.utils import MilestonesTestCaseMixin
+
 
 class MemoryUserPartitionScheme(object):
     """
@@ -53,7 +55,7 @@ def resolve_attrs(test_method):
 
 @attr('shard_2')
 @ddt.ddt
-class GroupAccessTestCase(ModuleStoreTestCase):
+class GroupAccessTestCase(ModuleStoreTestCase, MilestonesTestCaseMixin):
     """
     Tests to ensure that has_access() correctly enforces the visibility
     restrictions specified in the `group_access` field of XBlocks.

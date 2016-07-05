@@ -615,7 +615,7 @@ class TestHandleXBlockCallback(SharedModuleStoreTestCase, LoginEnrollmentTestCas
 
 @attr('shard_1')
 @ddt.ddt
-class TestTOC(ModuleStoreTestCase):
+class TestTOC(ModuleStoreTestCase, MilestonesTestCaseMixin):
     """Check the Table of Contents for a course"""
     def setup_request_and_course(self, num_finds, num_sends):
         """
@@ -722,7 +722,7 @@ class TestTOC(ModuleStoreTestCase):
 @attr('shard_1')
 @ddt.ddt
 @patch.dict('django.conf.settings.FEATURES', {'ENABLE_SPECIAL_EXAMS': True})
-class TestProctoringRendering(SharedModuleStoreTestCase):
+class TestProctoringRendering(SharedModuleStoreTestCase, MilestonesTestCaseMixin):
     @classmethod
     def setUpClass(cls):
         super(TestProctoringRendering, cls).setUpClass()

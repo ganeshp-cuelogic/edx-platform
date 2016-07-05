@@ -30,6 +30,8 @@ from xmodule.modulestore.tests.factories import ItemFactory, CourseFactory
 from xmodule.partitions.partitions import Group, UserPartition
 from openedx.core.djangoapps.self_paced.models import SelfPacedConfiguration
 
+from milestones.tests.utils import MilestonesTestCaseMixin
+
 
 class MasqueradeTestCase(SharedModuleStoreTestCase, LoginEnrollmentTestCase):
     """
@@ -151,7 +153,7 @@ class MasqueradeTestCase(SharedModuleStoreTestCase, LoginEnrollmentTestCase):
 
 
 @attr('shard_1')
-class NormalStudentVisibilityTest(MasqueradeTestCase):
+class NormalStudentVisibilityTest(MasqueradeTestCase, MilestonesTestCaseMixin):
     """
     Verify the course displays as expected for a "normal" student (to ensure test setup is correct).
     """
@@ -206,7 +208,7 @@ class StaffMasqueradeTestCase(MasqueradeTestCase):
 
 
 @attr('shard_1')
-class TestStaffMasqueradeAsStudent(StaffMasqueradeTestCase):
+class TestStaffMasqueradeAsStudent(StaffMasqueradeTestCase, MilestonesTestCaseMixin):
     """
     Check for staff being able to masquerade as student.
     """

@@ -12,10 +12,11 @@ from xmodule.modulestore.tests.factories import ItemFactory, CourseFactory
 from xmodule.modulestore.tests.django_utils import SharedModuleStoreTestCase
 from xmodule.partitions.partitions import Group, UserPartition
 from openedx.core.djangoapps.user_api.tests.factories import UserCourseTagFactory
+from milestones.tests.utils import MilestonesTestCaseMixin
 
 
 @attr('shard_1')
-class SplitTestBase(SharedModuleStoreTestCase):
+class SplitTestBase(SharedModuleStoreTestCase, MilestonesTestCaseMixin):
     """
     Sets up a basic course and user for split test testing.
     Also provides tests of rendered HTML for two user_tag conditions, 0 and 1.

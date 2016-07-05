@@ -63,6 +63,7 @@ from instructor_task.tasks_helper import (
     UPDATE_STATUS_SUCCEEDED,
 )
 from instructor_analytics.basic import UNAVAILABLE
+from milestones.tests.utils import MilestonesTestCaseMixin
 from openedx.core.djangoapps.util.testing import ContentGroupTestCase, TestConditionalContent
 from teams.tests.factories import CourseTeamFactory, CourseTeamMembershipFactory
 
@@ -797,7 +798,12 @@ class TestProblemReportSplitTestContent(TestReportMixin, TestConditionalContent,
         self.assertEquals(self.get_csv_row_with_headers(), header_row)
 
 
-class TestProblemReportCohortedContent(TestReportMixin, ContentGroupTestCase, InstructorTaskModuleTestCase):
+class TestProblemReportCohortedContent(
+    TestReportMixin,
+    ContentGroupTestCase,
+    InstructorTaskModuleTestCase,
+    MilestonesTestCaseMixin
+):
     """
     Test the problem report on a course that has cohorted content.
     """

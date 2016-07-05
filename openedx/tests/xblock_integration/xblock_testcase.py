@@ -56,6 +56,8 @@ from lms.djangoapps.courseware.tests.helpers import LoginEnrollmentTestCase
 
 import lms.djangoapps.lms_xblock.runtime
 
+from milestones.tests.utils import MilestonesTestCaseMixin
+
 
 class XBlockEventTestMixin(object):
     """Mixin for easily verifying that events were published during a
@@ -343,6 +345,7 @@ class XBlockTestCase(XBlockStudentTestCaseMixin,
                      GradePublishTestMixin,
                      SharedModuleStoreTestCase,
                      LoginEnrollmentTestCase,
+                     MilestonesTestCaseMixin,
                      Plugin):
     """
     Class for all XBlock-internal test cases (as opposed to
