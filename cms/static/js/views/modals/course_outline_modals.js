@@ -807,7 +807,7 @@ define(['jquery', 'backbone', 'underscore', 'gettext', 'js/views/baseview',
                 });
             }
             // if only advanced editors exist, no tabs
-            if (tabs[0].editors === []) {
+            if (tabs[0].editors.length == 0) {
                 editors = tabs[1].editors;
                 tabs = [];
             }
