@@ -13,7 +13,7 @@ define(['jquery', 'backbone', 'underscore', 'gettext', 'js/views/baseview',
 ) {
     'use strict';
     var CourseOutlineXBlockModal, SettingsXBlockModal, PublishXBlockModal, AbstractEditor, BaseDateEditor,
-        ReleaseDateEditor, DueDateEditor, GradingEditor, PublishEditor, StaffLockEditor,
+        ReleaseDateEditor, DueDateEditor, GradingEditor, PublishEditor, ContentVisibilityEditor,
         VerificationAccessEditor, TimedExaminationPreferenceEditor, AccessEditor;
 
     CourseOutlineXBlockModal = BaseModal.extend({
@@ -590,47 +590,65 @@ define(['jquery', 'backbone', 'underscore', 'gettext', 'js/views/baseview',
         }
     });
 
-    StaffLockEditor = AbstractEditor.extend({
-        templateName: 'staff-lock-editor',
-        className: 'edit-staff-lock',
-        isModelLocked: function() {
-            return this.model.get('has_explicit_staff_lock');
+    ContentVisibilityEditor = AbstractEditor.extend({
+        templateName: 'content-visibility-editor',
+        className: 'edit-content-visibility',
+        modelVisibility: function() {
+            if (this.model.get('has_explicit_staff_lock')) {
+                return 'staff_only';
+            }
+            else if (this.model.get('hide_after_due')) {
+                return 'hide_after_due';
+            }
+            /* TODO: uncomment when hide_after_submit is added
+            else if (this.model.get('hide_after_submit')) {
+                return 'hide_after_submit';
+            }
+            */
+            else {
+                return 'visible'
+            }
         },
 
-        isAncestorLocked: function() {
-            return this.model.get('ancestor_has_staff_lock');
+        ancestorVisibility: function() {
+            return this.model.get('ancestor_visibility');
         },
 
         afterRender: function () {
             AbstractEditor.prototype.afterRender.call(this);
-            this.setLock(this.isModelLocked());
+            this.setVisibility(this.modelVisibility());
         },
 
-        setLock: function(value) {
-            this.$('#staff_lock').prop('checked', value);
+        setVisibility: function(value) {
+            // TODO: set a radio button here
         },
 
-        isLocked: function() {
-            return this.$('#staff_lock').is(':checked');
+        currentVisibility: function() {
+            // TODO: return currently selected radio option
         },
 
         hasChanges: function() {
-            return this.isModelLocked() !== this.isLocked();
+            return this.modelVisibility() !== this.currentVisibility();
         },
 
         getRequestData: function() {
-            return this.hasChanges() ? {
-                publish: 'republish',
-                metadata: {
-                    visible_to_staff_only: this.isLocked() ? true : null
+            currentVisibility = this.currentVisibility()
+            if (this.hasChanges) {
+                return {
+                    publish: 'republish',
+                    metadata: {
+                        visible_to_staff_only: currentVisibility == 'staff_only' ? true : null,
+                        content_visibility: ['hide_after_due', 'hide_after_submit'].indexOf(currentVisibility) ? currentVisibility : null
                     }
-                } : {};
+                }
+            }
+            else return {};
         },
 
         getContext: function () {
             return {
-                hasExplicitStaffLock: this.isModelLocked(),
-                ancestorLocked: this.isAncestorLocked()
+                visibility: this.modelVisibility(),
+                ancestorVisibility: this.ancestorVisibility()
             };
         }
     });
@@ -749,35 +767,33 @@ define(['jquery', 'backbone', 'underscore', 'gettext', 'js/views/baseview',
 
         getEditModal: function (xblockInfo, options) {
             var editors = [];
-            var tabs = [];
-
-            if (xblockInfo.isChapter()) {
-                editors = [ReleaseDateEditor, StaffLockEditor];
-            } else if (xblockInfo.isSequential()) {
-                tabs.push({
+            var tabs = [
+                {
                     name: 'basic',
                     displayName: gettext('Basic'),
-                    editors: [ReleaseDateEditor, GradingEditor, DueDateEditor, StaffLockEditor]
-                });
+                    editors: []
+                },
+                {
+                    name: 'advanced',
+                    displayName: gettext('Advanced'),
+                    editors: [ContentVisibilityEditor]
+                }
+            ];
+
+            if (xblockInfo.isChapter()) {
+                tabs[0].editors = [ReleaseDateEditor];
+            } else if (xblockInfo.isSequential()) {
+                tabs[0].editors = [ReleaseDateEditor, GradingEditor, DueDateEditor];
 
                 if (options.enable_proctored_exams || options.enable_timed_exams) {
-                    tabs.push({
-                        name: 'advanced',
-                        displayName: gettext('Advanced'),
-                        editors: [TimedExaminationPreferenceEditor]
-                    });
+                    tabs[1].editors.push(TimedExaminationPreferenceEditor);
                 }
 
                 if (typeof(xblockInfo.get('is_prereq')) !== 'undefined') {
-                    tabs.push({
-                        name: 'access',
-                        // Translators: This label refers to access to course content.
-                        displayName: gettext('Access'),
-                        editors: [AccessEditor]
-                    });
+                    tabs[1].editors.push(AccessEditor);
                 }
             } else if (xblockInfo.isVertical()) {
-                editors = [StaffLockEditor];
+                editors = [ContentVisibilityEditor];
 
                 if (xblockInfo.hasVerifiedCheckpoints()) {
                     editors.push(VerificationAccessEditor);
@@ -790,8 +806,14 @@ define(['jquery', 'backbone', 'underscore', 'gettext', 'js/views/baseview',
                     tab.editors = _.without(tab.editors, ReleaseDateEditor, DueDateEditor);
                 });
             }
+            // if only advanced editors exist, no tabs
+            if (tabs[0].editors === []) {
+                editors = tabs[1].editors;
+                tabs = [];
+            }
+
             return new SettingsXBlockModal($.extend({
-                tabs: tabs,
+                tabs: editors != [] ? tabs : [],
                 editors: editors,
                 model: xblockInfo
             }, options));
