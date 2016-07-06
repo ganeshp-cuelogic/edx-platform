@@ -7,10 +7,10 @@ define(["jquery", "edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers", "common/j
         describe("CourseOutlinePage", function() {
             var createCourseOutlinePage, displayNameInput, model, outlinePage, requests,
                 getItemsOfType, getItemHeaders, verifyItemsExpanded, expandItemsAndVerifyState,
-                collapseItemsAndVerifyState, createMockCourseJSON, createMockSectionJSON, createMockSubsectionJSON,
-                verifyTypePublishable, mockCourseJSON, mockEmptyCourseJSON, mockSingleSectionCourseJSON,
-                createMockVerticalJSON, createMockIndexJSON, mockCourseEntranceExamJSON,
-                mockOutlinePage = readFixtures('mock/mock-course-outline-page.underscore'),
+                collapseItemsAndVerifyState, selectBasicSettings, selectAdvancedSettings, createMockCourseJSON,
+                createMockSectionJSON, createMockSubsectionJSON, verifyTypePublishable, mockCourseJSON,
+                mockEmptyCourseJSON, mockSingleSectionCourseJSON, createMockVerticalJSON, createMockIndexJSON,
+                mockCourseEntranceExamJSON, mockOutlinePage = readFixtures('mock/mock-course-outline-page.underscore'),
                 mockRerunNotification = readFixtures('mock/mock-course-rerun-notification.underscore');
 
             createMockCourseJSON = function(options, children) {
@@ -135,6 +135,14 @@ define(["jquery", "edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers", "common/j
             collapseItemsAndVerifyState = function(type) {
                 getItemHeaders(type).find('.ui-toggle-expansion').click();
                 verifyItemsExpanded(type, false);
+            };
+
+            selectBasicSettings = function() {
+               this.$(".modal-section .settings-tab-button[data-tab='basic']").click();
+            };
+
+            selectAdvancedSettings = function() {
+               this.$(".modal-section .settings-tab-button[data-tab='advanced']").click();
             };
 
             createCourseOutlinePage = function(test, courseJSON, createOnly) {
@@ -535,8 +543,10 @@ define(["jquery", "edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers", "common/j
                     expect($("due_date")).not.toExist();
                     expect($("grading_format")).not.toExist();
 
-                    // Staff lock controls are always visible
-                    expect($("#staff_lock")).toExist();
+                    // Staff lock controls are always visible on the advanced tab
+                    selectAdvancedSettings();
+                    expect($(".content_visibility")).toExist();
+                    selectBasicSettings();
                     $(".wrapper-modal-window .action-save").click();
                     AjaxHelpers.expectJsonRequest(requests, 'POST', '/xblock/mock-section', {
                         "metadata":{
@@ -606,8 +616,7 @@ define(["jquery", "edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers", "common/j
 
             describe("Subsection", function() {
                 var getDisplayNameWrapper, setEditModalValues, mockServerValuesJson,
-                    selectDisableSpecialExams, selectBasicSettings, selectAdvancedSettings,
-                    selectAccessSettings, selectTimedExam, selectProctoredExam, selectPracticeExam,
+                    selectDisableSpecialExams, selectTimedExam, selectProctoredExam, selectPracticeExam,
                     selectPrerequisite, selectLastPrerequisiteSubsection, checkOptionFieldVisibility;
 
                 getDisplayNameWrapper = function() {
@@ -623,18 +632,6 @@ define(["jquery", "edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers", "common/j
 
                 selectDisableSpecialExams = function() {
                     this.$("input.no_special_exam").prop('checked', true).trigger('change');
-                };
-
-                selectBasicSettings = function() {
-                   this.$(".modal-section .settings-tab-button[data-tab='basic']").click();
-                };
-
-                selectAdvancedSettings = function() {
-                   this.$(".modal-section .settings-tab-button[data-tab='advanced']").click();
-                };
-
-                selectAccessSettings = function() {
-                   this.$(".modal-section .settings-tab-button[data-tab='access']").click();
                 };
 
                 selectTimedExam = function(time_limit, hide_after_due) {
@@ -767,7 +764,6 @@ define(["jquery", "edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers", "common/j
                     selectBasicSettings();
                     expect($('.modal-section .settings-tab-button[data-tab="basic"]')).toHaveClass('active');
                     expect($('.modal-section .settings-tab-button[data-tab="advanced"]')).not.toHaveClass('active');
-                    expect($('.modal-section .settings-tab-button[data-tab="access"]')).not.toHaveClass('active');
                 });
 
                 it('can show advanced settings', function() {
@@ -776,16 +772,6 @@ define(["jquery", "edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers", "common/j
                     selectAdvancedSettings();
                     expect($('.modal-section .settings-tab-button[data-tab="basic"]')).not.toHaveClass('active');
                     expect($('.modal-section .settings-tab-button[data-tab="advanced"]')).toHaveClass('active');
-                    expect($('.modal-section .settings-tab-button[data-tab="access"]')).not.toHaveClass('active');
-                });
-
-                it('can show access settings', function() {
-                    createCourseOutlinePage(this, mockCourseJSON, false);
-                    outlinePage.$('.outline-subsection .configure-button').click();
-                    selectAccessSettings();
-                    expect($('.modal-section .settings-tab-button[data-tab="basic"]')).not.toHaveClass('active');
-                    expect($('.modal-section .settings-tab-button[data-tab="advanced"]')).not.toHaveClass('active');
-                    expect($('.modal-section .settings-tab-button[data-tab="access"]')).toHaveClass('active');
                 });
 
                 it('does not show settings tab headers if there is only one tab to show', function() {
@@ -1300,7 +1286,7 @@ define(["jquery", "edx-ui-toolkit/js/utils/spec-helpers/ajax-helpers", "common/j
                     ]);
                     createCourseOutlinePage(this, mockCourseWithPreqsJSON, false);
                     outlinePage.$('.outline-subsection .configure-button').click();
-                    selectAccessSettings();
+                    selectAdvancedSettings();
                     selectLastPrerequisiteSubsection('');
                     expect($('#prereq_min_score_error').css('display')).toBe('none');
                     selectLastPrerequisiteSubsection('80');

@@ -632,7 +632,7 @@ define(['jquery', 'backbone', 'underscore', 'gettext', 'js/views/baseview',
         },
 
         getRequestData: function() {
-            currentVisibility = this.currentVisibility()
+            var currentVisibility = this.currentVisibility()
             if (this.hasChanges) {
                 return {
                     publish: 'republish',
