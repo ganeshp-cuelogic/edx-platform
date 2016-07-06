@@ -202,16 +202,19 @@ def get_component_templates(courselike, library=False):
     def component_support_level(editable_types, name, template=None):
         """
 
-        Returns whether the specified name/template combination is included in the list of editable
-        xblock types.  TODO: update to make accurate
+        Returns the support level for the given xblock name/template combination.
 
         Args:
-            editable_types:
-            template:
+            editable_types: a QuerySet of xblocks with their support levels
+            name: the name of the xblock
+            template: optional template for the xblock
 
         Returns:
+            The support level (see XBlockStudioConfiguration) or False if this
+            xblock name/template combination has no Studio support at all.
 
         """
+        # If the Studio support feature is disabled, return FULL_SUPPORT for all.
         if editable_types is None:
             return XBlockStudioConfiguration.FULL_SUPPORT
         if template is None:
@@ -243,7 +246,8 @@ def get_component_templates(courselike, library=False):
         component_types = [component for component in component_types if component != 'discussion']
 
     component_types = [component for component in component_types if component not in disabled_xblocks()]
-    allow_unsupported = courselike.allow_unsupported_xblocks
+    # TODO: talk to Shelby about how to handle Content Libraries
+    allow_unsupported = getattr(courselike, "allow_unsupported_xblocks", False)
 
     for category in component_types:
         authorable_variations = authorable_xblocks(allow_unsupported=allow_unsupported, name=category)
@@ -266,28 +270,28 @@ def get_component_templates(courselike, library=False):
             for template in component_class.templates():
                 filter_templates = getattr(component_class, 'filter_templates', None)
                 if not filter_templates or filter_templates(template, courselike):
-                        template_id = template.get('template_id')
-                        support_level_with_template = component_support_level(
-                            authorable_variations, category, template_id
-                        )
-                        if support_level_with_template:
-                            # Tab can be 'common' 'advanced'
-                            # Default setting is common/advanced depending on the presence of markdown
-                            tab = 'common'
-                            if template['metadata'].get('markdown') is None:
-                                tab = 'advanced'
-                            hinted = template.get('hinted', False)
+                    template_id = template.get('template_id')
+                    support_level_with_template = component_support_level(
+                        authorable_variations, category, template_id
+                    )
+                    if support_level_with_template:
+                        # Tab can be 'common' 'advanced'
+                        # Default setting is common/advanced depending on the presence of markdown
+                        tab = 'common'
+                        if template['metadata'].get('markdown') is None:
+                            tab = 'advanced'
+                        hinted = template.get('hinted', False)
 
-                            templates_for_category.append(
-                                create_template_dict(
-                                    _(template['metadata'].get('display_name')),    # pylint: disable=translation-of-non-string
-                                    category,
-                                    support_level_with_template,
-                                    template_id,
-                                    tab,
-                                    hinted,
-                                )
+                        templates_for_category.append(
+                            create_template_dict(
+                                _(template['metadata'].get('display_name')),    # pylint: disable=translation-of-non-string
+                                category,
+                                support_level_with_template,
+                                template_id,
+                                tab,
+                                hinted,
                             )
+                        )
 
         # Add any advanced problem types. Note that these are different xblocks being stored as Advanced Problems.
         if category == 'problem':
