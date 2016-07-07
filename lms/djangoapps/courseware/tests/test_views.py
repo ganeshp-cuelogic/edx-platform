@@ -1402,8 +1402,6 @@ class ProgressPageTests(ModuleStoreTestCase):
         generated_certificate = self.generate_certificate(
             "http://www.example.com/certificate.pdf", "honor"
         )
-        CertificateGenerationConfiguration(enabled=True).save()
-        certs_api.set_cert_generation_enabled(self.course.id, True)
 
         # Course certificate configurations
         certificates = [
@@ -1439,8 +1437,6 @@ class ProgressPageTests(ModuleStoreTestCase):
             "http://www.example.com/certificate.pdf", "honor"
         )
 
-        CertificateGenerationConfiguration(enabled=True).save()
-        certs_api.set_cert_generation_enabled(self.course.id, True)
         resp = self.client.get(
             reverse('progress', args=[unicode(self.course.id)])
         )
@@ -1465,6 +1461,80 @@ class ProgressPageTests(ModuleStoreTestCase):
             u'You are enrolled in the audit track for this course. The audit track does not include a certificate.'
         )
 
+    def test_invalidated_cert_data(self):
+        """
+        Verify that invalidated cert data is returned if cert is invalidated.
+        """
+        generated_certificate = self.generate_certificate(
+            "http://www.example.com/certificate.pdf", "honor"
+        )
+
+        CertificateInvalidationFactory.create(
+            generated_certificate=generated_certificate,
+            invalidated_by=self.user
+        )
+        # Invalidate user certificate
+        generated_certificate.invalidate()
+        response = views._get_cert_data(self.user, self.course, self.course.id, True, CourseMode.HONOR)
+        self.assertEqual(response['cert_status'], 'invalidated')
+        self.assertEqual(response['title'], 'Your certificate has been invalidated')
+
+    def test_downloadable_get_cert_data(self):
+        """
+        Verify that downloadable cert data is returned if cert is downloadable.
+        """
+        self.generate_certificate(
+            "http://www.example.com/certificate.pdf", "honor"
+        )
+        with patch('certificates.api.certificate_downloadable_status', Mock(
+                return_value=self.mock_certificate_downloadable_status(is_downloadable=True))):
+            response = views._get_cert_data(self.user, self.course, self.course.id, True, CourseMode.HONOR)
+
+        self.assertEqual(response['cert_status'], 'downloadable')
+        self.assertEqual(response['title'], 'Your certificate is available')
+
+    def test_generating_get_cert_data(self):
+        """
+        Verify that generating cert data is returned if cert is generating.
+        """
+        self.generate_certificate(
+            "http://www.example.com/certificate.pdf", "honor"
+        )
+        with patch('certificates.api.certificate_downloadable_status',
+                   Mock(return_value=self.mock_certificate_downloadable_status(is_generating=True))):
+            response = views._get_cert_data(self.user, self.course, self.course.id, True, CourseMode.HONOR)
+
+        self.assertEqual(response['cert_status'], 'generating')
+        self.assertEqual(response['title'], "We're working on it...")
+
+    def test_unverified_get_cert_data(self):
+        """
+        Verify that unverified cert data is returned if cert is unverified.
+        """
+        self.generate_certificate(
+            "http://www.example.com/certificate.pdf", "honor"
+        )
+        with patch('certificates.api.certificate_downloadable_status',
+                   Mock(return_value=self.mock_certificate_downloadable_status(is_unverified=True))):
+            response = views._get_cert_data(self.user, self.course, self.course.id, True, CourseMode.HONOR)
+
+        self.assertEqual(response['cert_status'], 'unverified')
+        self.assertEqual(response['title'], "Certificate unavailable")
+
+    def test_request_get_cert_data(self):
+        """
+        Verify that requested cert data is returned if cert is to be requested.
+        """
+        self.generate_certificate(
+            "http://www.example.com/certificate.pdf", "honor"
+        )
+        with patch('certificates.api.certificate_downloadable_status',
+                   Mock(return_value=self.mock_certificate_downloadable_status())):
+            response = views._get_cert_data(self.user, self.course, self.course.id, True, CourseMode.HONOR)
+
+        self.assertEqual(response['cert_status'], 'request_cert')
+        self.assertEqual(response['title'], "Congratulations, you qualified for a certificate!")
+
     def assert_invalidate_certificate(self, certificate):
         """ Dry method to mark certificate as invalid. And assert the response. """
         CertificateInvalidationFactory.create(
@@ -1484,13 +1554,29 @@ class ProgressPageTests(ModuleStoreTestCase):
 
     def generate_certificate(self, url, mode):
         """ Dry method to generate certificate. """
-        return GeneratedCertificateFactory.create(
+
+        generated_certificate = GeneratedCertificateFactory.create(
             user=self.user,
             course_id=self.course.id,
             status=CertificateStatuses.downloadable,
             download_url=url,
             mode=mode
         )
+        CertificateGenerationConfiguration(enabled=True).save()
+        certs_api.set_cert_generation_enabled(self.course.id, True)
+        return generated_certificate
+
+    def mock_certificate_downloadable_status(
+            self, is_downloadable=False, is_generating=False, is_unverified=False, uuid=None, download_url=None
+    ):
+        """Dry method to mock certificate downloadable status response."""
+        return {
+            'is_downloadable': is_downloadable,
+            'is_generating': is_generating,
+            'is_unverified': is_unverified,
+            'download_url': uuid,
+            'uuid': download_url,
+        }
 
 
 @attr('shard_1')
