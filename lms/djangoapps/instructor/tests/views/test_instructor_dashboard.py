@@ -169,7 +169,7 @@ class TestInstructorDashboard(ModuleStoreTestCase, LoginEnrollmentTestCase, XssT
         response = self.client.get(self.url)
 
         # Check that the number of professional enrollments is two
-        self.assertContains(response, '<th scope="row">Professional</th><td>2</td>', html=True)
+        self.assertContains(response, '<th scope="row">Professional</th><td>2</td>')
 
     @patch.dict(settings.FEATURES, {'DISPLAY_ANALYTICS_ENROLLMENTS': False})
     @override_settings(ANALYTICS_DASHBOARD_URL='http://example.com')
